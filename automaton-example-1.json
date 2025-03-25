@@ -1,0 +1,36 @@
+{
+  "states": [
+    "1",
+    "2"
+  ],
+  "alphabet": [
+    "a",
+    "b"
+  ],
+  "transitions": [
+    {
+      "source": "1",
+      "input": "a",
+      "target": "2"
+    },
+    {
+      "source": "1",
+      "input": "b",
+      "target": "1"
+    },
+    {
+      "source": "2",
+      "input": "a",
+      "target": "1"
+    },
+    {
+      "source": "2",
+      "input": "b",
+      "target": "2"
+    }
+  ],
+  "initialState": "1",
+  "acceptStates": [
+    "2"
+  ]
+}

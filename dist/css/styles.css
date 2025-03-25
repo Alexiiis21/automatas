@@ -1,0 +1,105 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    padding: 20px;
+  }
+  
+  svg {
+    border: 1px solid #ccc;
+    margin: 20px 0;
+  }
+  
+  .links line {
+    stroke: #999;
+    stroke-opacity: 0.6;
+  }
+  
+  .nodes circle {
+    stroke: #fff;
+    stroke-width: 1.5px;
+    filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.3));
+  }
+  
+  .state-label {
+    font-size: 16px;
+    font-weight: bold;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  
+  .transition-label {
+    font-size: 14px;
+    fill: #333;
+    font-weight: bold;
+    text-anchor: middle;
+    pointer-events: none;
+    background-color: white;
+  }
+  
+  .initial-state-symbol {
+    fill: #d62728;
+    pointer-events: none;
+  }
+  
+  .accept-state {
+    stroke: #333;
+    stroke-width: 2px;
+  }
+  
+  .initial-state-marker {
+    fill: none;
+    stroke: #333;
+    stroke-width: 1.5px;
+  }
+  
+  .controls {
+    margin-bottom: 20px;
+  }
+  
+  /* Estilos para el menú de navegación */
+  .navbar {
+    background-color: #333;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  }
+  
+  .navbar ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+  }
+  
+  .navbar li {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .navbar a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+  
+  .navbar a:hover {
+    background-color: #555;
+  }
+  
+  .navbar a.active {
+    background-color: #4CAF50;
+  }
+  
+  /* Estilo para el título principal */
+  h1.main-title {
+    text-align: center;
+    margin: 20px 0;
+    color: #333;
+  }

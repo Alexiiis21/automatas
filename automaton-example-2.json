@@ -1,0 +1,58 @@
+{
+  "states": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "alphabet": [
+    "a",
+    "b"
+  ],
+  "transitions": [
+    {
+      "source": "A",
+      "input": "a",
+      "target": "B"
+    },
+    {
+      "source": "A",
+      "input": "b",
+      "target": "B"
+    },
+    {
+      "source": "B",
+      "input": "b",
+      "target": "C"
+    },
+    {
+      "source": "B",
+      "input": "a",
+      "target": "D"
+    },
+    {
+      "source": "C",
+      "input": "a",
+      "target": "C"
+    },
+    {
+      "source": "C",
+      "input": "b",
+      "target": "C"
+    },
+    {
+      "source": "D",
+      "input": "a",
+      "target": "D"
+    },
+    {
+      "source": "D",
+      "input": "b",
+      "target": "D"
+    }
+  ],
+  "initialState": "A",
+  "acceptStates": [
+    "C"
+  ]
+}

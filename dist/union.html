@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unión de Autómatas Finitos</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <!-- Barra de navegación -->
+    <nav class="navbar">
+      <ul>
+        <li><a href="#/" class="nav-link">Visualización Básica</a></li>
+        <li><a href="#/union" class="nav-link active">Operación de Unión</a></li>
+        <!-- Espacio para futuras operaciones -->
+        <li><a href="#/intersection" class="nav-link disabled" style="opacity: 0.5;">Intersección (Próximamente)</a></li>
+        <li><a href="#/complement" class="nav-link disabled" style="opacity: 0.5;">Complemento (Próximamente)</a></li>
+      </ul>
+    </nav>
+    
+    <div class="container">
+      <h1 class="main-title">Unión de Autómatas Finitos</h1>
+      
+      <!-- Sección para la operación de unión -->
+      <section id="union-section">
+        <div id="union-container">
+          <!-- Aquí se cargará dinámicamente el contenido de la operación de unión -->
+        </div>
+        <div id="automaton"></div>
+      </section>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="router.js"></script>
+    <script src="js/automata.js"></script>
+    <script src="js/union-operation.js"></script>
+  </body>
+</html>
