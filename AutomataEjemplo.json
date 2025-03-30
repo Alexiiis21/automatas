@@ -1,14 +1,14 @@
 {
-    "states": ["q0", "q1", "q2"],
-    "alphabet": ["0", "1"],
-    "transitions": [
-      { "source": "q0", "input": "0", "target": "q1" },
-      { "source": "q0", "input": "1", "target": "q0" },
-      { "source": "q1", "input": "0", "target": "q2" },
-      { "source": "q1", "input": "1", "target": "q0" },
-      { "source": "q2", "input": "0", "target": "q2" },
-      { "source": "q2", "input": "1", "target": "q2" }
-    ],
-    "initialState": "q0",
-    "acceptStates": ["q2"]
-  }
+  "states": ["q0", "q1", "q2"],
+  "alphabet": ["0", "1"],
+  "transitions": [
+    { "from": "q0", "to": "q0", "symbol": "0" },
+    { "from": "q0", "to": "q1", "symbol": "1" },
+    { "from": "q1", "to": "q2", "symbol": "0" },
+    { "from": "q1", "to": "q0", "symbol": "1" },
+    { "from": "q2", "to": "q1", "symbol": "0" },
+    { "from": "q2", "to": "q2", "symbol": "1" }
+  ],
+  "initialState": "q0",
+  "finalStates": ["q2"]
+}

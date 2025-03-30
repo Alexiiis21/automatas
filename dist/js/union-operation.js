@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Funciones para realizar la operación de unión entre autómatas
 const automataOperations = {
     /**
      * Realiza la unión de dos AFDs.
@@ -120,6 +121,55 @@ const automataOperations = {
             initialState: afd.initialState,
             acceptStates: afd.acceptStates
         };
+    },
+    
+    /**
+     * Genera una representación de quintupla formal del autómata
+     * @param {Object} automaton - Autómata a convertir
+     * @returns {string} - Representación de quintupla del autómata
+     */
+    generateQuintuple: function(automaton) {
+        // Crear la quintupla M = (Q, Σ, δ, q0, F)
+        let quintuple = "Quintupla formal del autómata finito:\n\n";
+        quintuple += "M = (Q, Σ, δ, q0, F)\n\n";
+        
+        // Conjunto de estados Q
+        quintuple += "Q = {" + automaton.states.join(", ") + "}\n\n";
+        
+        // Alfabeto Σ
+        quintuple += "Σ = {" + automaton.alphabet.join(", ") + "}\n\n";
+        
+        // Función de transición δ
+        quintuple += "δ: Q × Σ → Q\n";
+        
+        // Tabla de transiciones
+        quintuple += "Tabla de transiciones:\n";
+        quintuple += "Estado\t| " + automaton.alphabet.map(symbol => `δ(q,${symbol})`).join("\t| ") + "\n";
+        quintuple += "-".repeat(80) + "\n";
+        
+        // Para cada estado, mostrar sus transiciones
+        for (const state of automaton.states) {
+            let row = state + "\t| ";
+            
+            for (const symbol of automaton.alphabet) {
+                const transition = automaton.transitions.find(t => 
+                    t.source === state && t.input === symbol
+                );
+                row += (transition ? transition.target : "-") + "\t| ";
+            }
+            
+            quintuple += row.trim() + "\n";
+        }
+        
+        quintuple += "\n";
+        
+        // Estado inicial q0
+        quintuple += "q0 = " + automaton.initialState + "\n\n";
+        
+        // Conjunto de estados de aceptación F
+        quintuple += "F = {" + automaton.acceptStates.join(", ") + "}\n";
+        
+        return quintuple;
     }
 };
 
@@ -183,6 +233,93 @@ function validateAutomatonStructure(data) {
     }
     
     return true;
+}
+
+// Función para exportar la quintupla como archivo TXT
+function exportQuintupleTxt(automaton, filename) {
+    const quintuple = automataOperations.generateQuintuple(automaton);
+    const blob = new Blob([quintuple], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    // Crear enlace de descarga
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'automaton_quintuple.txt';
+    document.body.appendChild(a);
+    a.click();
+    
+    // Limpiar
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
+// Función para exportar el autómata como imagen PNG
+function exportAutomatonAsPNG(automatonElement, filename) {
+    if (!automatonElement) {
+        console.error('No se encontró el elemento del autómata');
+        alert('Error: No se pudo encontrar la visualización del autómata');
+        return;
+    }
+    
+    // Verificar que d3 esté disponible
+    if (!window.d3) {
+        console.error('d3.js no está disponible');
+        alert('Error: No se pudo generar la imagen. d3.js no está disponible.');
+        return;
+    }
+    
+    try {
+        // Crear un canvas temporal
+        const svgElement = automatonElement.querySelector('svg');
+        if (!svgElement) {
+            console.error('No se encontró el elemento SVG');
+            alert('Error: No se pudo encontrar la visualización SVG del autómata');
+            return;
+        }
+        
+        // Obtener el contenido SVG
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configurar las dimensiones del canvas
+        const svgRect = svgElement.getBoundingClientRect();
+        canvas.width = svgRect.width;
+        canvas.height = svgRect.height;
+        
+        // Crear imagen desde SVG
+        const img = new Image();
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        img.onload = function() {
+            // Dibujar en el canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            // Convertir a PNG y descargar
+            const pngUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = filename || 'automaton.png';
+            document.body.appendChild(a);
+            a.click();
+            
+            // Limpiar
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        };
+        
+        img.src = url;
+    } catch (error) {
+        console.error('Error al exportar como PNG:', error);
+        alert('Error al generar la imagen: ' + error.message);
+    }
 }
 
 // Función para cargar un autómata desde archivo
@@ -332,6 +469,30 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBtn.style.cursor = 'pointer';
         buttonsContainer.appendChild(loadBtn);
         
+        // Botones para exportar quintupla y PNG (solo disponibles después de cargar)
+        const exportQuintupleBtn = document.createElement('button');
+        exportQuintupleBtn.textContent = 'Exportar Quintupla (TXT)';
+        exportQuintupleBtn.style.marginRight = '10px';
+        exportQuintupleBtn.style.padding = '8px 12px';
+        exportQuintupleBtn.style.backgroundColor = '#607D8B';
+        exportQuintupleBtn.style.color = 'white';
+        exportQuintupleBtn.style.border = 'none';
+        exportQuintupleBtn.style.borderRadius = '4px';
+        exportQuintupleBtn.style.cursor = 'pointer';
+        exportQuintupleBtn.style.display = 'none'; // Inicialmente oculto
+        buttonsContainer.appendChild(exportQuintupleBtn);
+        
+        const exportPngBtn = document.createElement('button');
+        exportPngBtn.textContent = 'Exportar Autómata (PNG)';
+        exportPngBtn.style.padding = '8px 12px';
+        exportPngBtn.style.backgroundColor = '#FF9800';
+        exportPngBtn.style.color = 'white';
+        exportPngBtn.style.border = 'none';
+        exportPngBtn.style.borderRadius = '4px';
+        exportPngBtn.style.cursor = 'pointer';
+        exportPngBtn.style.display = 'none'; // Inicialmente oculto
+        buttonsContainer.appendChild(exportPngBtn);
+        
         // Contenedor para mostrar los datos cargados
         const dataContainer = document.createElement('div');
         dataContainer.id = `data-container-${automatonId}`;
@@ -343,6 +504,16 @@ document.addEventListener('DOMContentLoaded', function() {
         dataContainer.innerHTML = '<p>No hay datos cargados aún.</p>';
         container.appendChild(dataContainer);
         
+        // Crear un contenedor para la visualización del autómata
+        const visualizationContainer = document.createElement('div');
+        visualizationContainer.id = `visualization-${automatonId}`;
+        visualizationContainer.style.marginTop = '20px';
+        visualizationContainer.style.width = '100%';
+        visualizationContainer.style.height = '200px';
+        visualizationContainer.style.border = '1px dashed #ccc';
+        visualizationContainer.style.display = 'none'; // Inicialmente oculto
+        container.appendChild(visualizationContainer);
+        
         // Evento para cargar archivo
         loadBtn.addEventListener('click', function() {
             loadAutomatonFromFile(`file-input-${automatonId}`, function(data) {
@@ -352,9 +523,38 @@ document.addEventListener('DOMContentLoaded', function() {
                     afd2Data = data;
                 }
                 console.log(`Autómata ${automatonId} cargado:`, data);
+                
+                // Mostrar botones de exportación
+                exportQuintupleBtn.style.display = 'inline-block';
+                exportPngBtn.style.display = 'inline-block';
+                
+                // Visualizar el autómata si es posible
+                if (typeof window.visualizeAutomaton === 'function') {
+                    visualizationContainer.style.display = 'block';
+                    window.visualizeAutomaton(data, visualizationContainer);
+                }
             });
         });
         
+        // Evento para exportar quintupla
+        exportQuintupleBtn.addEventListener('click', function() {
+            const automaton = automatonId === 1 ? afd1Data : afd2Data;
+            if (automaton) {
+                exportQuintupleTxt(automaton, `automaton${automatonId}_quintuple.txt`);
+            } else {
+                alert('No hay autómata cargado para exportar.');
+            }
+        });
+        
+        // Evento para exportar PNG
+        exportPngBtn.addEventListener('click', function() {
+            const visContainer = document.getElementById(`visualization-${automatonId}`);
+            if (visContainer && visContainer.style.display !== 'none') {
+                exportAutomatonAsPNG(visContainer, `automaton${automatonId}.png`);
+            } else {
+                alert('No hay visualización disponible para exportar.');
+            }
+        });
     }
     
     // Crear secciones para ambos autómatas
@@ -375,6 +575,61 @@ document.addEventListener('DOMContentLoaded', function() {
     unionButton.style.cursor = 'pointer';
     container.appendChild(unionButton);
     
+    // Crear contenedor para el resultado
+    const resultContainer = document.createElement('div');
+    resultContainer.id = 'resultContainer';
+    resultContainer.style.marginTop = '30px';
+    resultContainer.style.padding = '20px';
+    resultContainer.style.border = '1px solid #ddd';
+    resultContainer.style.borderRadius = '5px';
+    resultContainer.style.backgroundColor = '#f0f4f8';
+    resultContainer.style.display = 'none'; 
+    container.appendChild(resultContainer);
+    
+    // Título del resultado
+    const resultTitle = document.createElement('h3');
+    resultTitle.textContent = 'Resultado de la Unión';
+    resultTitle.style.marginBottom = '15px';
+    resultContainer.appendChild(resultTitle);
+    
+    // Contenedor para los botones del resultado
+    const resultButtonsContainer = document.createElement('div');
+    resultButtonsContainer.style.marginBottom = '20px';
+    resultContainer.appendChild(resultButtonsContainer);
+    
+    // Botones para exportar la quintupla y PNG del resultado
+    const exportResultQuintupleBtn = document.createElement('button');
+    exportResultQuintupleBtn.textContent = 'Exportar Quintupla Resultado (TXT)';
+    exportResultQuintupleBtn.style.marginRight = '15px';
+    exportResultQuintupleBtn.style.padding = '8px 12px';
+    exportResultQuintupleBtn.style.backgroundColor = '#607D8B';
+    exportResultQuintupleBtn.style.color = 'white';
+    exportResultQuintupleBtn.style.border = 'none';
+    exportResultQuintupleBtn.style.borderRadius = '4px';
+    exportResultQuintupleBtn.style.cursor = 'pointer';
+    resultButtonsContainer.appendChild(exportResultQuintupleBtn);
+    
+    const exportResultPngBtn = document.createElement('button');
+    exportResultPngBtn.textContent = 'Exportar Resultado (PNG)';
+    exportResultPngBtn.style.padding = '8px 12px';
+    exportResultPngBtn.style.backgroundColor = '#FF9800';
+    exportResultPngBtn.style.color = 'white';
+    exportResultPngBtn.style.border = 'none';
+    exportResultPngBtn.style.borderRadius = '4px';
+    exportResultPngBtn.style.cursor = 'pointer';
+    resultButtonsContainer.appendChild(exportResultPngBtn);
+    
+    // Contenedor para la visualización del resultado
+    const resultVisualizationContainer = document.createElement('div');
+    resultVisualizationContainer.id = 'result-visualization';
+    resultVisualizationContainer.style.width = '100%';
+    resultVisualizationContainer.style.height = '300px';
+    resultVisualizationContainer.style.border = '1px solid #ccc';
+    resultContainer.appendChild(resultVisualizationContainer);
+    
+    // Variable para almacenar el autómata resultante
+    let unionResult = null;
+    
     // Agregar evento al botón de unión
     unionButton.addEventListener('click', function() {
         try {
@@ -386,13 +641,387 @@ document.addEventListener('DOMContentLoaded', function() {
             const unionResult = automataOperations.union(afd1Data, afd2Data);
             console.log('Resultado de la unión:', unionResult);
             
-            // Mostrar mensaje de éxito
+            // Mostrar el contenedor de resultado
+            resultContainer.style.display = 'block';
+            
+            // Visualizar el resultado
+            if (typeof window.visualizeAutomaton === 'function') {
+                window.visualizeAutomaton(unionResult, resultVisualizationContainer);
+            } else if (typeof window.updateVisualization === 'function') {
+                window.updateVisualization(unionResult);
+            }
+            
+            // Mensaje de éxito
             alert(`Unión realizada con éxito. El autómata resultante tiene ${unionResult.states.length} estados y ${unionResult.transitions.length} transiciones.`);
-            // Actualizar la visualización
             window.updateVisualization(unionResult);
         } catch (error) {
             console.error('Error al realizar la unión:', error);
             alert('Error al realizar la unión: ' + error.message);
         }
     });
+    
+    // Evento para exportar quintupla del resultado
+    exportResultQuintupleBtn.addEventListener('click', function() {
+        if (window.unionResult) {
+            exportQuintupleTxt(window.unionResult, 'union_result_quintuple.txt');
+        } else {
+            alert('No hay resultado de unión para exportar.');
+        }
+    });
+    
+    // Evento para exportar PNG del resultado
+    exportResultPngBtn.addEventListener('click', function() {
+        if (window.unionResult && document.getElementById('result-visualization')) {
+            exportAutomatonAsPNG(document.getElementById('result-visualization'), 'union_result.png');
+        } else {
+            alert('No hay visualización de resultado disponible para exportar.');
+        }
+    });
 });
+
+// Exportar las funciones necesarias al ámbito global
+window.loadAFD1 = function() {
+    const loadBtn = document.querySelector('.afd-input:first-child button');
+    if (loadBtn) loadBtn.click();
+};
+
+window.loadAFD2 = function() {
+    const loadBtn = document.querySelector('.afd-input:last-child button');
+    if (loadBtn) loadBtn.click();
+};
+
+window.performUnion = function() {
+    const unionBtn = document.querySelector('button:contains("Realizar Unión")');
+    if (unionBtn) unionBtn.click();
+};
+
+window.validateAutomatonStructure = validateAutomatonStructure;
+/**
+ * Visualiza un autómata en un elemento contenedor usando D3.js
+ * @param {Object} automaton - El autómata a visualizar
+ * @param {HTMLElement} container - El elemento contenedor donde se dibujará el autómata
+ */
+function visualizeAutomaton(automaton, container) {
+    // Limpiar el contenedor
+    container.innerHTML = '';
+    
+    // Verificar que d3 esté disponible
+    if (!window.d3) {
+        container.innerHTML = '<p style="color: red;">Error: d3.js no está disponible.</p>';
+        console.error('d3.js no está disponible para la visualización');
+        return;
+    }
+    
+    // Ancho y alto del SVG
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    
+    // Crear el elemento SVG
+    const svg = d3.select(container)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet');
+    
+    // Añadir una definición para las marcas de flechas
+    svg.append('defs')
+        .append('marker')
+        .attr('id', `arrowhead-${container.id}`) // Usar ID único
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 20)  // Posición donde termina la flecha
+        .attr('refY', 0)
+        .attr('orient', 'auto')
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('fill', '#666');
+    
+    // Crear un layout de fuerzas para posicionar los nodos
+    const simulation = d3.forceSimulation()
+        .force('link', d3.forceLink().id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(40));
+    
+    // Preparar los datos para D3
+    const nodes = automaton.states.map(state => ({
+        id: state,
+        isInitial: state === automaton.initialState,
+        isAccept: automaton.acceptStates.includes(state)
+    }));
+    
+    // Enlaces para transiciones
+    const links = [];
+    automaton.transitions.forEach(t => {
+        // Verificar si ya existe un enlace entre estos nodos
+        const existingLinkIndex = links.findIndex(link => 
+            link.source === t.source && link.target === t.target
+        );
+        
+        if (existingLinkIndex >= 0) {
+            // Si ya existe un enlace, solo añadir este símbolo
+            links[existingLinkIndex].symbols.push(t.input);
+        } else {
+            // Si no, crear un nuevo enlace
+            links.push({
+                source: t.source,
+                target: t.target,
+                symbols: [t.input]
+            });
+        }
+    });
+    
+    // Crear bordes (transiciones)
+    const link = svg.append('g')
+        .selectAll('path')
+        .data(links)
+        .enter()
+        .append('path')
+        .attr('stroke', '#666')
+        .attr('stroke-width', 1.5)
+        .attr('fill', 'none')
+        .attr('marker-end', `url(#arrowhead-${container.id})`);
+    
+    // Crear nodos (estados)
+    const node = svg.append('g')
+        .selectAll('g')
+        .data(nodes)
+        .enter()
+        .append('g')
+        .attr('class', 'node')
+        .call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended));
+    
+    // Círculo para cada estado
+    node.append('circle')
+        .attr('r', 20)
+        .attr('fill', d => d.isAccept ? '#fff' : '#ccc')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 2);
+    
+    // Círculo adicional para estados de aceptación
+    node.filter(d => d.isAccept)
+        .append('circle')
+        .attr('r', 16)
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 2);
+    
+    // Flecha para el estado inicial
+    node.filter(d => d.isInitial)
+        .append('path')
+        .attr('d', 'M-40,0L-25,0')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 2)
+        .attr('marker-end', `url(#arrowhead-${container.id})`);
+    
+    // Etiquetas de los estados
+    node.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'central')
+        .attr('font-size', '12px')
+        .text(d => d.id);
+    
+    // Etiquetas de las transiciones
+    const linkLabels = svg.append('g')
+        .selectAll('text')
+        .data(links)
+        .enter()
+        .append('text')
+        .attr('font-size', '10px')
+        .attr('text-anchor', 'middle')
+        .attr('dy', -5)
+        .text(d => d.symbols.join(', '));
+    
+    // Actualizar posiciones en cada iteración
+    simulation
+        .nodes(nodes)
+        .on('tick', ticked);
+    
+    simulation.force('link')
+        .links(links);
+    
+    // Función para actualizar posiciones
+    function ticked() {
+        // Actualizar posición de los enlaces
+        link.attr('d', function(d) {
+            // Gestionar auto-bucles y enlaces entre los mismos nodos
+            if (d.source.id === d.target.id) {
+                const x = d.source.x;
+                const y = d.source.y;
+                return `M${x},${y-20} A20,20 0 1,1 ${x+0.1},${y-20.1}`;
+            }
+            
+            // Enlaces normales con curvaturas
+            const dx = d.target.x - d.source.x;
+            const dy = d.target.y - d.source.y;
+            const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
+            
+            return `M${d.source.x},${d.source.y} A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+        });
+        
+        // Actualizar posición de los nodos
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+        
+        // Actualizar posición de las etiquetas de enlaces
+        linkLabels.attr('transform', function(d) {
+            if (d.source.id === d.target.id) {
+                // Etiqueta para auto-bucles
+                return `translate(${d.source.x},${d.source.y - 40})`;
+            }
+            
+            // Etiqueta para enlaces normales
+            return `translate(${(d.source.x + d.target.x) / 2},${(d.source.y + d.target.y) / 2})`;
+        });
+    }
+    
+    // Funciones para el arrastre de nodos
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+    
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
+    
+    return svg.node();
+}
+
+// Actualiza la función generateQuintuple para usar el nuevo formato
+automataOperations.generateQuintuple = function(automaton) {
+    // Cabecera
+    let quintuple = "=== QUINTUPLA DEL AUTÓMATA FINITO DETERMINISTA ===\n\n";
+    
+    // 1. Conjunto de estados Q
+    quintuple += "1. CONJUNTO DE ESTADOS (Q):\n   ";
+    quintuple += automaton.states.join(", ") + "\n\n";
+    
+    // 2. Alfabeto Σ
+    quintuple += "2. ALFABETO (Σ):\n   ";
+    quintuple += automaton.alphabet.join(", ") + "\n\n";
+    
+    // 3. Función de transición δ
+    quintuple += "3. FUNCIÓN DE TRANSICIÓN (δ: Q × Σ → Q):\n";
+    
+    // Para cada estado y símbolo, mostrar su transición
+    for (const state of automaton.states) {
+        for (const symbol of automaton.alphabet) {
+            const transition = automaton.transitions.find(t => 
+                t.source === state && t.input === symbol
+            );
+            
+            if (transition) {
+                quintuple += `   δ(${state}, ${symbol}) = ${transition.target}\n`;
+            }
+        }
+    }
+    quintuple += "\n";
+    
+    // 4. Estado inicial q0
+    quintuple += "4. ESTADO INICIAL (q₀):\n   ";
+    quintuple += automaton.initialState + "\n\n";
+    
+    // 5. Conjunto de estados de aceptación F
+    quintuple += "5. CONJUNTO DE ESTADOS DE ACEPTACIÓN (F):\n   ";
+    quintuple += automaton.acceptStates.join(", ") + "\n\n";
+    
+    // Información adicional
+    quintuple += "=== INFORMACIÓN ADICIONAL ===\n\n";
+    quintuple += `• Número total de estados: ${automaton.states.length}\n`;
+    quintuple += `• Tamaño del alfabeto: ${automaton.alphabet.length}\n`;
+    quintuple += `• Número total de transiciones: ${automaton.transitions.length}\n`;
+    
+    return quintuple;
+};
+
+// Modifica el evento del botón de unión para almacenar correctamente el resultado
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar que estamos en la página correcta
+    if (window.location.hash !== '#/union' && 
+        window.location.pathname !== '/union' && 
+        !window.location.pathname.includes('union.html')) {
+        console.log('No estamos en la página de unión');
+        return;
+    }
+    
+    console.log('Iniciando interfaz de unión de autómatas');
+    
+    // El resto del código permanece igual, solo modificamos la función del botón de unión
+    
+    // Crea una variable global para almacenar el resultado de la unión
+    window.unionResult = null;
+    
+    // Reemplazar la función del botón de unión cuando se crea
+    setTimeout(() => {
+        const unionButton = document.querySelector('button');
+        if (unionButton && unionButton.textContent.includes('Realizar Unión')) {
+            unionButton.addEventListener('click', function() {
+                try {
+                    if (!afd1Data || !afd2Data) {
+                        alert('Debes cargar ambos autómatas antes de realizar la unión.');
+                        return;
+                    }
+                    
+                    window.unionResult = automataOperations.union(afd1Data, afd2Data);
+                    console.log('Resultado de la unión:', window.unionResult);
+                    
+                    // Mostrar el contenedor de resultado
+                    const resultContainer = document.getElementById('resultontainer');
+                    if (resultContainer) resultContainer.style.display = 'block';
+                    
+                    // Visualizar el resultado
+                    const resultVisualizationContainer = document.getElementById('result-visualization');
+                    if (resultVisualizationContainer) {
+                        visualizeAutomaton(window.unionResult, resultVisualizationContainer);
+                    }
+                    
+                    // Mensaje de éxito
+                    alert(`Unión realizada con éxito. El autómata resultante tiene ${window.unionResult.states.length} estados y ${window.unionResult.transitions.length} transiciones.`);
+                    
+                } catch (error) {
+                    console.error('Error al realizar la unión:', error);
+                    alert('Error al realizar la unión: ' + error.message);
+                }
+            }, { once: true });  // Usar once: true para evitar múltiples listeners
+        }
+    }, 1000);  // Esperar a que el DOM esté completamente cargado
+});
+
+// Exportar funciones al ámbito global
+window.visualizeAutomaton = visualizeAutomaton;
+
+// Corrige la función performUnion
+window.performUnion = function() {
+    // Buscar el botón por su texto
+    const allButtons = document.querySelectorAll('button');
+    let unionButton = null;
+    
+    for (const btn of allButtons) {
+        if (btn.textContent.includes('Realizar Unión')) {
+            unionButton = btn;
+            break;
+        }
+    }
+    
+    if (unionButton) {
+        unionButton.click();
+    } else {
+        console.error('No se encontró el botón de realizar unión');
+        alert('Error: No se encontró el botón para realizar la unión');
+    }
+};
+
+// Corrige la exportación de quintupla para el resultado
