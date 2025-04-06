@@ -11,48 +11,48 @@
   ],
   "transitions": [
     {
-      "source": "A",
-      "input": "a",
-      "target": "B"
+      "from": "A",
+      "symbol": "a",
+      "to": "B"
     },
     {
-      "source": "A",
-      "input": "b",
-      "target": "B"
+      "from": "A",
+      "symbol": "b",
+      "to": "B"
     },
     {
-      "source": "B",
-      "input": "b",
-      "target": "C"
+      "from": "B",
+      "symbol": "b",
+      "to": "C"
     },
     {
-      "source": "B",
-      "input": "a",
-      "target": "D"
+      "from": "B",
+      "symbol": "a",
+      "to": "D"
     },
     {
-      "source": "C",
-      "input": "a",
-      "target": "C"
+      "from": "C",
+      "symbol": "a",
+      "to": "C"
     },
     {
-      "source": "C",
-      "input": "b",
-      "target": "C"
+      "from": "C",
+      "symbol": "b",
+      "to": "C"
     },
     {
-      "source": "D",
-      "input": "a",
-      "target": "D"
+      "from": "D",
+      "symbol": "a",
+      "to": "D"
     },
     {
-      "source": "D",
-      "input": "b",
-      "target": "D"
+      "from": "D",
+      "symbol": "b",
+      "to": "D"
     }
   ],
   "initialState": "A",
-  "acceptStates": [
+  "finalStates": [
     "C"
   ]
 }

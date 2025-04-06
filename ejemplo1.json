@@ -9,28 +9,28 @@
   ],
   "transitions": [
     {
-      "source": "1",
-      "input": "a",
-      "target": "2"
+      "from": "1",
+      "symbol": "a",
+      "to": "2"
     },
     {
-      "source": "1",
-      "input": "b",
-      "target": "1"
+      "from": "1",
+      "symbol": "b",
+      "to": "1"
     },
     {
-      "source": "2",
-      "input": "a",
-      "target": "1"
+      "from": "2",
+      "symbol": "a",
+      "to": "1"
     },
     {
-      "source": "2",
-      "input": "b",
-      "target": "2"
+      "from": "2",
+      "symbol": "b",
+      "to": "2"
     }
   ],
   "initialState": "1",
-  "acceptStates": [
+  "finalStates": [
     "2"
   ]
 }
