@@ -87,27 +87,25 @@ const AutomataVisualizer = ({ automata }) => {
       isFinal: automata.finalStates.includes(state),
     }));
 
-    // Process transitions to handle multiple transitions between same states
-    const transitionGroups = {};
-    automata.transitions.forEach((t) => {
-      const key = `${t.from}-${t.to}`;
-      if (!transitionGroups[key]) {
-        transitionGroups[key] = [];
-      }
-      transitionGroups[key].push(t.symbol);
-    });
+    const links = [];
+const transitionLabels = {};
 
-    const links = Object.entries(transitionGroups).map(([key, symbols], i) => {
-      const [source, target] = key.split("-");
-      return {
-        id: `link-${i}`,
-        source,
-        target,
-        symbols,
-        isSelfLoop: source === target,
-      };
+// Organizar transiciones múltiples entre los mismos estados
+automata.transitions.forEach((t) => {
+  const linkKey = `${t.from}-${t.to}`;
+  
+  if (transitionLabels[linkKey]) {
+    transitionLabels[linkKey] += `, ${t.symbol}`;
+  } else {
+    transitionLabels[linkKey] = t.symbol;
+    links.push({
+      id: linkKey,
+      source: t.from,
+      target: t.to,
+      isSelfLoop: t.from === t.to
     });
-
+  }
+});
     // Create beautiful gradient for the background
     const defs = g.append("defs");
 
@@ -198,30 +196,38 @@ const AutomataVisualizer = ({ automata }) => {
       .attr("class", "transition-path");
 
     // Link text for transition symbols
-    const linkText = link
+    const labelGroup = g.append("g").attr("class", "transition-labels");
+
+    // Link text for transition symbols
+    const linkLabels = labelGroup
+      .selectAll("text")
+      .data(links)
+      .enter()
       .append("text")
-      .text((d) => d.symbols.join(", "))
-      .attr("font-size", 12)
-      .attr("font-family", "Arial, sans-serif")
+      .attr("class", "transition-label")
+      .attr("dy", -8)
+      .attr("font-size", 14)
+      .attr("font-weight", "bold")
       .attr("text-anchor", "middle")
       .attr("fill", "#333")
-      .attr("dy", -5)
-      .attr("class", "transition-label");
-
-    // Adjust label background size after text has been rendered
-    linkText.each(function () {
+      .text(d => transitionLabels[d.id]);
+    
+    // Añadir fondo a las etiquetas para mejor legibilidad (opcional)
+    linkLabels.each(function() {
       try {
         const bbox = this.getBBox();
-        const parent = d3.select(this.parentNode);
-        parent
-          .select("rect")
-          .attr("width", bbox.width + 8)
-          .attr("height", bbox.height + 4);
-      } catch (e) {
+        labelGroup.insert("rect", "text")
+          .attr("x", bbox.x - 2)
+          .attr("y", bbox.y - 2)
+          .attr("width", bbox.width + 4)
+          .attr("height", bbox.height + 4)
+          .attr("fill", "white")
+          .attr("opacity", 0.7)
+          .attr("rx", 2);
+      } catch(e) {
         console.log("Error getting bounding box:", e);
       }
     });
-
     // Create nodes
     const nodeGroup = g.append("g").attr("class", "nodes");
 
@@ -327,19 +333,38 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
       });
 
       // Update label positions
-      linkText
-        .attr("x", (d) => {
-          if (d.isSelfLoop) {
-            return d.source.x;
-          }
-          return (d.source.x + d.target.x) / 2;
-        })
-        .attr("y", (d) => {
-          if (d.isSelfLoop) {
-            return d.source.y - nodeRadius - 15;
-          }
-          return (d.source.y + d.target.y) / 2 - 10;
-        });
+      linkLabels
+      .attr("x", d => {
+        if (d.isSelfLoop) {
+          return d.source.x;
+        } else {
+          const dx = d.target.x - d.source.x;
+          const dy = d.target.y - d.source.y;
+          return d.source.x + dx/2 + (dy !== 0 ? 15 * dy/Math.abs(dy) : 0);
+        }
+      })
+      .attr("y", d => {
+        if (d.isSelfLoop) {
+          return d.source.y - nodeRadius * 2.5;
+        } else {
+          const dx = d.target.x - d.source.x;
+          const dy = d.target.y - d.source.y;
+          return d.source.y + dy/2 - (dx !== 0 ? 15 * dx/Math.abs(dx) : 0);
+        }
+      });
+    
+    // Update label background positions (si decidiste incluir los fondos)
+    labelGroup.selectAll("rect").each(function(_, i) {
+      const text = labelGroup.selectAll("text").nodes()[i];
+      try {
+        const bbox = text.getBBox();
+        d3.select(this)
+          .attr("x", bbox.x - 2)
+          .attr("y", bbox.y - 2)
+          .attr("width", bbox.width + 4)
+          .attr("height", bbox.height + 4);
+      } catch(e) {}
+    });
 
       // Update node positions
       node.attr("transform", (d) => `translate(${d.x}, ${d.y})`);

@@ -56,55 +56,125 @@ export default function UnionPage() {
             alert('Debes cargar dos autómatas para realizar la unión');
             return;
         }
-
+    
         setIsProcessing(true);
-
+    
         try {
-            // Crear prefijos para evitar colisiones de nombres de estados
-            const prefixA1 = "A_";
-            const prefixA2 = "B_";
+            // Verificar que ambos autómatas son AFDs
+            if (!isAFD(automata1) || !isAFD(automata2)) {
+                alert('Esta operación requiere que ambos autómatas sean AFDs');
+                setIsProcessing(false);
+                return;
+            }
             
-            // Nuevo estado inicial para la unión
-            const newInitialState = "q_inicial";
+            // Verificar que ambos autómatas compartan el mismo alfabeto
+            const alphabet = [...new Set([...automata1.alphabet, ...automata2.alphabet])];
             
-            // Prefijamos los estados para evitar colisiones
-            const statesA1 = automata1.states.map(state => prefixA1 + state);
-            const statesA2 = automata2.states.map(state => prefixA2 + state);
-            
-            // Prefijamos los estados iniciales y finales
-            const initialA1 = prefixA1 + automata1.initialState;
-            const initialA2 = prefixA2 + automata2.initialState;
-            const finalStatesA1 = automata1.finalStates.map(state => prefixA1 + state);
-            const finalStatesA2 = automata2.finalStates.map(state => prefixA2 + state);
-            
-            // Prefijamos las transiciones
-            const transitionsA1 = automata1.transitions.map(t => ({
-                from: prefixA1 + t.from,
-                symbol: t.symbol,
-                to: prefixA1 + t.to
-            }));
-            
-            const transitionsA2 = automata2.transitions.map(t => ({
-                from: prefixA2 + t.from,
-                symbol: t.symbol,
-                to: prefixA2 + t.to
-            }));
-            
-            // Creamos las nuevas transiciones desde el nuevo estado inicial
-            const newTransitions = [
-                { from: newInitialState, symbol: 'ε', to: initialA1 },
-                { from: newInitialState, symbol: 'ε', to: initialA2 }
-            ];
-            
-            // Unimos todos los componentes para formar el nuevo autómata
+            // Inicializar el resultado
             const result = {
-                states: [newInitialState, ...statesA1, ...statesA2],
-                alphabet: [...new Set([...automata1.alphabet, ...automata2.alphabet, 'ε'])],
-                initialState: newInitialState,
-                finalStates: [...finalStatesA1, ...finalStatesA2],
-                transitions: [...newTransitions, ...transitionsA1, ...transitionsA2]
+                states: [],
+                alphabet: alphabet,
+                transitions: [],
+                initialState: null,
+                finalStates: []
             };
+    
+            // Crear el producto cartesiano de estados
+            const stateMap = new Map(); // Para mapear pares de estados a IDs legibles
+    
+            // Crear el estado inicial - MANTENER LA COMBINACIÓN ORIGINAL
+            const initialStatePair = `${automata1.initialState},${automata2.initialState}`;
+            // Usar directamente el par de estados como nombre del nuevo estado
+            const initialStateName = `(${automata1.initialState},${automata2.initialState})`;
+            result.initialState = initialStateName;
+            stateMap.set(initialStatePair, initialStateName);
+            result.states.push(initialStateName);
             
+            // Si cualquiera de los estados iniciales es de aceptación, el estado combinado es de aceptación
+            if (automata1.finalStates.includes(automata1.initialState) || 
+                automata2.finalStates.includes(automata2.initialState)) {
+                result.finalStates.push(initialStateName);
+            }
+            
+            // Procesar estados usando BFS
+            const queue = [initialStatePair];
+            const visited = new Set([initialStatePair]);
+            
+            while (queue.length > 0) {
+                const currentPair = queue.shift();
+                const [state1, state2] = currentPair.split(',');
+                const currentStateId = stateMap.get(currentPair);
+                
+                // Por cada símbolo en el alfabeto
+                for (const symbol of alphabet) {
+                    // Encontrar los siguientes estados en ambos autómatas
+                    const nextState1 = getTransitionTarget(automata1, state1, symbol) || 'dead';
+                    const nextState2 = getTransitionTarget(automata2, state2, symbol) || 'dead';
+                    
+                    // Crear el siguiente par de estados
+                    const nextPair = `${nextState1},${nextState2}`;
+                    
+                    // Verificar si este par ya ha sido procesado
+                    if (!stateMap.has(nextPair)) {
+                        // Usar directamente el par de estados como nombre del nuevo estado
+                        const newStateName = `(${nextState1},${nextState2})`;
+                        stateMap.set(nextPair, newStateName);
+                        result.states.push(newStateName);
+                        
+                        // Determinar si es un estado de aceptación
+                        if (
+                          (nextState1 !== 'dead' && automata1.finalStates.includes(nextState1)) || 
+                          (nextState2 !== 'dead' && automata2.finalStates.includes(nextState2))
+                        ) {
+                            result.finalStates.push(newStateName);
+                        }
+                        
+                        // Añadir a la cola para procesar sus transiciones
+                        if (!visited.has(nextPair)) {
+                            queue.push(nextPair);
+                            visited.add(nextPair);
+                        }
+                    }
+                    
+                    // Añadir la transición
+                    const nextStateId = stateMap.get(nextPair);
+                    result.transitions.push({
+                        from: currentStateId,
+                        symbol: symbol,
+                        to: nextStateId
+                    });
+                }
+            }
+            
+            // Filtrar estados muertos que no son necesarios
+            const reachableStates = new Set();
+            const transitionsToKeep = [];
+            
+            // BFS para encontrar estados alcanzables
+            const reachableQueue = [result.initialState];
+            reachableStates.add(result.initialState);
+            
+            while (reachableQueue.length > 0) {
+                const currentState = reachableQueue.shift();
+                
+                // Encontrar todas las transiciones desde este estado
+                for (const transition of result.transitions) {
+                    if (transition.from === currentState) {
+                        transitionsToKeep.push(transition);
+                        
+                        if (!reachableStates.has(transition.to)) {
+                            reachableStates.add(transition.to);
+                            reachableQueue.push(transition.to);
+                        }
+                    }
+                }
+            }
+            
+            // Actualizar el resultado con solo los estados alcanzables
+            result.states = [...reachableStates];
+            result.transitions = transitionsToKeep;
+            result.finalStates = result.finalStates.filter(state => reachableStates.has(state));
+                
             setUnionResult(result);
         } catch (error) {
             console.error('Error al realizar la unión:', error);
@@ -112,6 +182,49 @@ export default function UnionPage() {
         } finally {
             setIsProcessing(false);
         }
+    };
+    
+    // Función auxiliar para comprobar si un autómata es AFD
+    const isAFD = (automaton) => {
+        // Comprobar que para cada estado y cada símbolo del alfabeto existe exactamente una transición
+        const transitionMap = new Map();
+        
+        for (const state of automaton.states) {
+            for (const symbol of automaton.alphabet) {
+                const key = `${state},${symbol}`;
+                transitionMap.set(key, 0);
+            }
+        }
+        
+        for (const transition of automaton.transitions) {
+            const key = `${transition.from},${transition.symbol}`;
+            transitionMap.set(key, transitionMap.get(key) + 1);
+            
+            // Si hay más de una transición para un par estado-símbolo, no es AFD
+            if (transitionMap.get(key) > 1) {
+                return false;
+            }
+        }
+        
+        // Verificar que existe exactamente una transición para cada par estado-símbolo
+        for (const [key, count] of transitionMap.entries()) {
+            if (count !== 1) {
+                return false;
+            }
+        }
+        
+        return true;
+    };
+    
+    // Función auxiliar para obtener el estado destino de una transición
+    const getTransitionTarget = (automaton, state, symbol) => {
+        if (state === 'dead') return 'dead';
+        
+        const transition = automaton.transitions.find(t => 
+            t.from === state && t.symbol === symbol
+        );
+        
+        return transition ? transition.to : null;
     };
 
     return (

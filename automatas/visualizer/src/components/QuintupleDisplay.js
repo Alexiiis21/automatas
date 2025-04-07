@@ -24,16 +24,43 @@ const QuintupleDisplay = ({ automata }) => {
                 
                 <div className="bg-gray-50 p-3 rounded-md col-span-1 md:col-span-2">
                     <p className="text-sm font-medium text-gray-600 mb-1">δ (Transiciones):</p>
-                    <div className="text-sm text-black bg-white p-3 rounded border border-gray-200 max-h-40 overflow-y-auto">
-                        <ul className="space-y-1 divide-y divide-gray-100">
-                            {automata.transitions.map((transition, index) => (
-                                <li key={index} className="py-1 flex">
-                                    <span className="font-mono">
-                                        δ({transition.from}, {transition.symbol}) = {transition.to}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
+                    <div className="text-sm text-black bg-white p-3 rounded border border-gray-200 overflow-x-auto">
+                        <table className="min-w-full border-collapse">
+                            <thead>
+                                <tr>
+                                    <th className="border border-gray-300 px-4 py-2 bg-gray-100">Estado</th>
+                                    {automata.alphabet.map(symbol => (
+                                        <th key={symbol} className="border border-gray-300 px-4 py-2 bg-gray-100">
+                                            {symbol}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {automata.states.map(state => (
+                                    <tr key={state}>
+                                        <td className="border border-gray-300 px-4 py-2 font-medium">
+                                            {state}{automata.initialState === state ? ' *' : ''}
+                                            {automata.finalStates.includes(state) ? ' †' : ''}
+                                        </td>
+                                        {automata.alphabet.map(symbol => {
+                                            const transition = automata.transitions.find(
+                                                t => t.from === state && t.symbol === symbol
+                                            );
+                                            return (
+                                                <td key={`${state}-${symbol}`} className="border border-gray-300 px-4 py-2 text-center">
+                                                    {transition ? transition.to : '-'}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <div className="mt-2 text-xs text-gray-500">
+                            <span className="mr-4">* Estado inicial</span>
+                            <span>† Estado final</span>
+                        </div>
                     </div>
                 </div>
                 

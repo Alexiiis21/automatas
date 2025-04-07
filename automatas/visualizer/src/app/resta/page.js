@@ -27,7 +27,6 @@ export default function RestaPage() {
     };
 
     const validateAutomata = (data) => {
-        // Check if data has all required fields
         if (!data.states || !Array.isArray(data.states) || 
             !data.alphabet || !Array.isArray(data.alphabet) ||
             !data.transitions || !Array.isArray(data.transitions) ||
@@ -36,15 +35,12 @@ export default function RestaPage() {
             return false;
         }
 
-        // Check if initial state is in states array
         if (!data.states.includes(data.initialState)) return false;
 
-        // Check if all final states are in states array
         for (const finalState of data.finalStates) {
             if (!data.states.includes(finalState)) return false;
         }
 
-        // Check if all transitions reference valid states and symbols
         for (const transition of data.transitions) {
             if (!transition.from || !transition.to || !transition.symbol) return false;
             if (!data.states.includes(transition.from)) return false;
@@ -64,11 +60,19 @@ export default function RestaPage() {
         setIsProcessing(true);
 
         try {
-            // Paso 1: Calcular el complemento del segundo autómata
-            const complementoAutomata2 = calcularComplemento(automata2);
+            // Verificar que ambos autómatas son AFDs
+            if (!isAFD(automata1) || !isAFD(automata2)) {
+                alert('Esta operación requiere que ambos autómatas sean AFDs');
+                setIsProcessing(false);
+                return;
+            }
             
-            // Paso 2: Realizar la intersección entre el primer autómata y el complemento del segundo
-            const resultado = calcularInterseccion(automata1, complementoAutomata2);
+            // Realizar la resta A - B = A ∩ B'
+            // 1. Obtener el complemento de B
+            const complementoB = obtenerComplemento(automata2);
+            
+            // 2. Obtener la intersección de A con el complemento de B
+            const resultado = calcularInterseccion(automata1, complementoB);
             
             setRestaResult(resultado);
         } catch (error) {
@@ -79,94 +83,39 @@ export default function RestaPage() {
         }
     };
 
-    // Función para calcular el complemento de un autómata
-    const calcularComplemento = (automata) => {
-        // Primero verificamos si el autómata es completo
-        const isComplete = checkIfAutomataIsComplete(automata);
-        
-        let completeAutomata;
-        
-        if (!isComplete) {
-            // Si no es completo, lo completamos añadiendo un estado sumidero
-            completeAutomata = makeAutomataComplete(automata);
-        } else {
-            // Si ya es completo, lo usamos directamente
-            completeAutomata = JSON.parse(JSON.stringify(automata));
-        }
-        
-        // Para calcular el complemento, invertimos los estados finales y no finales
-        const nonFinalStates = completeAutomata.states.filter(
-            state => !completeAutomata.finalStates.includes(state)
-        );
-        
-        // Creamos el autómata complemento
-        return {
-            states: completeAutomata.states,
-            alphabet: completeAutomata.alphabet,
-            initialState: completeAutomata.initialState,
-            finalStates: nonFinalStates,
-            transitions: completeAutomata.transitions
-        };
-    };
-    
-    // Verifica si el autómata es completo (tiene transiciones definidas para cada estado y símbolo)
-    const checkIfAutomataIsComplete = (automata) => {
-        for (const state of automata.states) {
-            for (const symbol of automata.alphabet) {
-                const transitionExists = automata.transitions.some(
+    // Función para verificar si un autómata es un AFD
+    const isAFD = (automaton) => {
+        // Para cada estado y cada símbolo del alfabeto, debe haber exactamente una transición
+        for (const state of automaton.states) {
+            for (const symbol of automaton.alphabet) {
+                const transitions = automaton.transitions.filter(
                     t => t.from === state && t.symbol === symbol
                 );
                 
-                if (!transitionExists) {
+                // En un AFD, debe haber exactamente una transición para cada par (estado, símbolo)
+                if (transitions.length !== 1) {
                     return false;
                 }
             }
         }
         return true;
     };
-    
-    // Hace que el autómata sea completo añadiendo un estado sumidero
-    const makeAutomataComplete = (automata) => {
-        const result = JSON.parse(JSON.stringify(automata));
-        
-        // Añadir un estado sumidero
-        const sinkState = "sink";
-        if (!result.states.includes(sinkState)) {
-            result.states.push(sinkState);
-        }
-        
-        // Añadir las transiciones faltantes al estado sumidero
-        for (const state of result.states) {
-            for (const symbol of result.alphabet) {
-                const transitionExists = result.transitions.some(
-                    t => t.from === state && t.symbol === symbol
-                );
-                
-                if (!transitionExists) {
-                    result.transitions.push({
-                        from: state,
-                        symbol: symbol,
-                        to: sinkState
-                    });
-                }
-            }
-        }
-        
-        // Añadir transiciones del estado sumidero a sí mismo para todos los símbolos
-        for (const symbol of result.alphabet) {
-            result.transitions.push({
-                from: sinkState,
-                symbol: symbol,
-                to: sinkState
-            });
-        }
-        
-        return result;
+
+    // Función para obtener el complemento de un autómata
+    const obtenerComplemento = (automata) => {
+        // El complemento cambia los estados finales por no finales y viceversa
+        return {
+            states: [...automata.states],
+            alphabet: [...automata.alphabet],
+            initialState: automata.initialState,
+            finalStates: automata.states.filter(state => !automata.finalStates.includes(state)),
+            transitions: [...automata.transitions]
+        };
     };
 
-    // Función para calcular la intersección entre dos autómatas
+    // Función para calcular la intersección A ∩ B utilizando el producto cartesiano y BFS
     const calcularInterseccion = (automata1, automata2) => {
-        // Encontrar el alfabeto común (intersección de alfabetos)
+        // Encontrar el alfabeto común
         const commonAlphabet = automata1.alphabet.filter(symbol => 
             automata2.alphabet.includes(symbol)
         );
@@ -175,99 +124,89 @@ export default function RestaPage() {
             throw new Error('Los autómatas no tienen símbolos en común en sus alfabetos.');
         }
 
-        // Crear estados como pares (q1,q2)
-        const productStates = [];
-        const stateMap = {}; // Para mapear pares de estados a nombres únicos
-        
-        automata1.states.forEach(state1 => {
-            automata2.states.forEach(state2 => {
-                const statePair = `(${state1},${state2})`;
-                productStates.push(statePair);
-                stateMap[statePair] = { state1, state2 };
-            });
-        });
-        
-        // Estado inicial: par de los estados iniciales
-        const initialState = `(${automata1.initialState},${automata2.initialState})`;
-        
-        // Estados finales: pares donde ambos componentes son estados finales
-        const finalStates = productStates.filter(statePair => {
-            const { state1, state2 } = stateMap[statePair];
-            return automata1.finalStates.includes(state1) && 
-                   automata2.finalStates.includes(state2);
-        });
-        
-        // Crear las transiciones del producto
-        const transitions = [];
-        
-        productStates.forEach(fromStatePair => {
-            const { state1: fromState1, state2: fromState2 } = stateMap[fromStatePair];
-            
-            commonAlphabet.forEach(symbol => {
-                // Buscar transiciones en el primer autómata
-                const transitionsA1 = automata1.transitions.filter(t => 
-                    t.from === fromState1 && t.symbol === symbol
-                );
-                
-                // Buscar transiciones en el segundo autómata
-                const transitionsA2 = automata2.transitions.filter(t => 
-                    t.from === fromState2 && t.symbol === symbol
-                );
-                
-                // Si ambos autómatas tienen transiciones con este símbolo
-                if (transitionsA1.length > 0 && transitionsA2.length > 0) {
-                    transitionsA1.forEach(t1 => {
-                        transitionsA2.forEach(t2 => {
-                            const toStatePair = `(${t1.to},${t2.to})`;
-                            
-                            transitions.push({
-                                from: fromStatePair,
-                                symbol: symbol,
-                                to: toStatePair
-                            });
-                        });
-                    });
-                }
-            });
-        });
-        
-        // Construir el autómata resultante
+        // Inicializar el resultado
         const result = {
-            states: productStates,
+            states: [],
             alphabet: commonAlphabet,
-            initialState: initialState,
-            finalStates: finalStates,
-            transitions: transitions
+            transitions: [],
+            initialState: null,
+            finalStates: []
         };
-        
-        // Optimización: eliminar estados inalcanzables
-        return removeUnreachableStates(result);
-    };
 
-    // Función para eliminar estados inalcanzables desde el estado inicial
-    const removeUnreachableStates = (automata) => {
-        const reachable = new Set([automata.initialState]);
-        let oldSize = 0;
+        // Crear el producto cartesiano de estados usando BFS
+        const stateMap = new Map(); // Para mapear pares de estados a nombres legibles
+
+        // Crear el estado inicial
+        const initialStatePair = `${automata1.initialState},${automata2.initialState}`;
+        const initialStateName = `(${automata1.initialState},${automata2.initialState})`;
+        result.initialState = initialStateName;
+        stateMap.set(initialStatePair, initialStateName);
+        result.states.push(initialStateName);
         
-        // Encontrar todos los estados alcanzables en un bucle de punto fijo
-        while (reachable.size !== oldSize) {
-            oldSize = reachable.size;
-            
-            automata.transitions.forEach(t => {
-                if (reachable.has(t.from)) {
-                    reachable.add(t.to);
-                }
-            });
+        // Es un estado final si es final en A y también en B
+        if (automata1.finalStates.includes(automata1.initialState) && 
+            automata2.finalStates.includes(automata2.initialState)) {
+            result.finalStates.push(initialStateName);
         }
         
-        // Filtrar el autómata para mantener solo los estados alcanzables
-        return {
-            states: automata.states.filter(s => reachable.has(s)),
-            alphabet: automata.alphabet,
-            initialState: automata.initialState,
-            finalStates: automata.finalStates.filter(s => reachable.has(s)),
-            transitions: automata.transitions.filter(t => reachable.has(t.from) && reachable.has(t.to))
-        };
+        // Procesar estados usando BFS
+        const queue = [initialStatePair];
+        const visited = new Set([initialStatePair]);
+        
+        while (queue.length > 0) {
+            const currentPair = queue.shift();
+            const [state1, state2] = currentPair.split(',');
+            const currentStateName = stateMap.get(currentPair);
+            
+            // Por cada símbolo en el alfabeto común
+            for (const symbol of commonAlphabet) {
+                // Encontrar el siguiente estado en cada autómata
+                const nextState1 = getTransitionTarget(automata1, state1, symbol);
+                const nextState2 = getTransitionTarget(automata2, state2, symbol);
+                
+                // Añadir la transición solo si ambos estados tienen transición para este símbolo
+                if (nextState1 && nextState2) {
+                    const nextPair = `${nextState1},${nextState2}`;
+                    
+                    // Si este par de estados no ha sido procesado antes
+                    if (!stateMap.has(nextPair)) {
+                        const newStateName = `(${nextState1},${nextState2})`;
+                        stateMap.set(nextPair, newStateName);
+                        result.states.push(newStateName);
+                        
+                        // Es un estado final si es final en A y también en B
+                        if (automata1.finalStates.includes(nextState1) && 
+                            automata2.finalStates.includes(nextState2)) {
+                            result.finalStates.push(newStateName);
+                        }
+                        
+                        // Añadir a la cola para procesar sus transiciones
+                        if (!visited.has(nextPair)) {
+                            queue.push(nextPair);
+                            visited.add(nextPair);
+                        }
+                    }
+                    
+                    // Añadir la transición
+                    const nextStateName = stateMap.get(nextPair);
+                    result.transitions.push({
+                        from: currentStateName,
+                        symbol: symbol,
+                        to: nextStateName
+                    });
+                }
+            }
+        }
+        
+        return result;
+    };
+
+    // Función auxiliar para obtener el estado destino de una transición
+    const getTransitionTarget = (automaton, state, symbol) => {
+        const transition = automaton.transitions.find(
+            t => t.from === state && t.symbol === symbol
+        );
+        return transition ? transition.to : null;
     };
 
     return (

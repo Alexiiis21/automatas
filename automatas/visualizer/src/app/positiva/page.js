@@ -51,17 +51,30 @@ export default function PositivaPage() {
             alert('Debes cargar un autómata para calcular su cierre positivo');
             return;
         }
-
+    
         setIsProcessing(true);
-
+    
         try {
-            // Crear una copia profunda del autómata original
-            const originalAutomata = JSON.parse(JSON.stringify(automata));
+            // Verificar que el autómata es válido
+            if (!validateAutomata(automata)) {
+                alert('El autómata proporcionado no tiene un formato válido');
+                setIsProcessing(false);
+                return;
+            }
+            
+            // Crear una copia del autómata original
+            const originalAutomata = {
+                states: [...automata.states],
+                alphabet: [...automata.alphabet],
+                transitions: [...automata.transitions.map(t => ({...t}))],
+                initialState: automata.initialState,
+                finalStates: [...automata.finalStates]
+            };
             
             // Prefijamos los estados del autómata original para evitar colisiones
-            const prefix = "q_";
+            const prefix = "A_";
             
-            // Mapeamos los estados originales a sus versiones prefijadas
+            // Creamos mapeo de estados originales a prefijados
             const stateMapping = {};
             originalAutomata.states.forEach(state => {
                 stateMapping[state] = prefix + state;
@@ -81,7 +94,7 @@ export default function PositivaPage() {
             const prefixedInitial = prefix + originalAutomata.initialState;
             const prefixedFinals = originalAutomata.finalStates.map(state => prefix + state);
             
-            // Crear un nuevo estado inicial (a diferencia del cierre de Kleene, NO será final)
+            // Crear un nuevo estado inicial (NO será final en cierre positivo)
             const newInitialState = "q_start";
             
             // Añadir una transición epsilon desde el nuevo estado inicial al estado inicial original
@@ -92,6 +105,7 @@ export default function PositivaPage() {
             };
             
             // Añadir transiciones epsilon desde todos los estados finales al estado inicial original
+            // Esto crea el "bucle" que permite repetir el autómata una o más veces
             const loopbackTransitions = prefixedFinals.map(finalState => ({
                 from: finalState,
                 symbol: 'ε',
@@ -103,7 +117,7 @@ export default function PositivaPage() {
                 states: [...prefixedStates, newInitialState],
                 alphabet: [...originalAutomata.alphabet, 'ε'], // Añadir epsilon al alfabeto
                 initialState: newInitialState,
-                // A diferencia del cierre de Kleene, el nuevo estado inicial NO es final
+                // En el cierre positivo A+, el nuevo estado inicial NO es de aceptación
                 finalStates: [...prefixedFinals], 
                 transitions: [
                     ...prefixedTransitions, 
@@ -118,7 +132,7 @@ export default function PositivaPage() {
             setPositivaResult(optimizedResult);
         } catch (error) {
             console.error('Error al calcular el cierre positivo:', error);
-            alert('Error al calcular el cierre positivo del autómata');
+            alert('Error al calcular el cierre positivo del autómata: ' + error.message);
         } finally {
             setIsProcessing(false);
         }

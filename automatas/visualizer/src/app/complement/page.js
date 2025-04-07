@@ -46,95 +46,126 @@ export default function ComplementPage() {
         return true;
     };
 
-    // All your existing functions for performing complement operations...
     const performComplement = () => {
         if (!automata) {
             alert('Debes cargar un autómata para calcular su complemento');
             return;
         }
-
+    
         setIsProcessing(true);
-
+    
         try {
-            // Primero verificamos si el autómata es completo
-            const isComplete = checkIfAutomataIsComplete(automata);
+            // Verificar que el autómata es un AFD
+            if (!isAFD(automata)) {
+                alert('Esta operación requiere que el autómata sea un AFD');
+                setIsProcessing(false);
+                return;
+            }
+    
+            // Crear una copia del autómata para trabajar
+            let workingAutomata = JSON.parse(JSON.stringify(automata));
             
-            let completeAutomata;
+            // Verificar si el autómata es completo
+            const missingTransitions = findMissingTransitions(workingAutomata);
             
-            if (!isComplete) {
-                // Si no es completo, lo completamos añadiendo un estado sumidero
-                completeAutomata = makeAutomataComplete(automata);
-            } else {
-                // Si ya es completo, lo usamos directamente
-                completeAutomata = JSON.parse(JSON.stringify(automata));
+            // Si hay transiciones faltantes, completamos el autómata
+            if (missingTransitions.length > 0) {
+                workingAutomata = makeAutomataComplete(workingAutomata);
             }
             
-            // Para calcular el complemento, simplemente invertimos los estados finales y no finales
-            const nonFinalStates = completeAutomata.states.filter(
-                state => !completeAutomata.finalStates.includes(state)
+            // Para calcular el complemento, invertimos los estados finales y no finales
+            const newFinalStates = workingAutomata.states.filter(
+                state => !workingAutomata.finalStates.includes(state)
             );
             
             // El complemento tiene los mismos estados, alfabeto, estado inicial y transiciones
             // Sólo cambian los estados finales
             const result = {
-                states: completeAutomata.states,
-                alphabet: completeAutomata.alphabet,
-                initialState: completeAutomata.initialState,
-                finalStates: nonFinalStates,
-                transitions: completeAutomata.transitions
+                states: [...workingAutomata.states],
+                alphabet: [...workingAutomata.alphabet],
+                transitions: [...workingAutomata.transitions],
+                initialState: workingAutomata.initialState,
+                finalStates: newFinalStates
             };
             
             setComplementResult(result);
         } catch (error) {
             console.error('Error al calcular el complemento:', error);
-            alert('Error al calcular el complemento del autómata');
+            alert('Error al calcular el complemento del autómata: ' + error.message);
         } finally {
             setIsProcessing(false);
         }
     };
     
-    const checkIfAutomataIsComplete = (automata) => {
-        for (const state of automata.states) {
-            for (const symbol of automata.alphabet) {
-                // Buscar si existe una transición para este estado y símbolo
-                const transitionExists = automata.transitions.some(
+    // Función para verificar si un autómata es un AFD
+    const isAFD = (automaton) => {
+        // Para cada estado y cada símbolo del alfabeto, debe haber exactamente una transición
+        for (const state of automaton.states) {
+            for (const symbol of automaton.alphabet) {
+                const transitions = automaton.transitions.filter(
                     t => t.from === state && t.symbol === symbol
                 );
                 
-                if (!transitionExists) {
-                    return false;
+                // En un AFD, debe haber exactamente una transición para cada par (estado, símbolo)
+                if (transitions.length > 1) {
+                    return false; // Más de una transición - no es determinista
                 }
             }
         }
-        return true;
+        return true; // Todas las verificaciones pasaron
     };
     
-    const makeAutomataComplete = (automata) => {
-        // Crear una copia profunda del autómata
-        const result = JSON.parse(JSON.stringify(automata));
+    // Función más eficiente para encontrar transiciones faltantes
+    const findMissingTransitions = (automaton) => {
+        const missingTransitions = [];
         
-        // Añadir un estado sumidero
-        const sinkState = "sink";
-        if (!result.states.includes(sinkState)) {
-            result.states.push(sinkState);
-        }
-        
-        // Añadir las transiciones faltantes al estado sumidero
-        for (const state of result.states) {
-            for (const symbol of result.alphabet) {
-                // Verificar si ya existe una transición para este estado y símbolo
-                const transitionExists = result.transitions.some(
+        for (const state of automaton.states) {
+            for (const symbol of automaton.alphabet) {
+                const hasTransition = automaton.transitions.some(
                     t => t.from === state && t.symbol === symbol
                 );
                 
-                if (!transitionExists) {
-                    result.transitions.push({
-                        from: state,
-                        symbol: symbol,
-                        to: sinkState
-                    });
+                if (!hasTransition) {
+                    missingTransitions.push({ state, symbol });
                 }
             }
+        }
+        
+        return missingTransitions;
+    };
+    
+    // Función mejorada para completar un autómata
+    const makeAutomataComplete = (automaton) => {
+        // Crear una copia profunda del autómata
+        const result = {
+            states: [...automaton.states],
+            alphabet: [...automaton.alphabet],
+            transitions: [...automaton.transitions],
+            initialState: automaton.initialState,
+            finalStates: [...automaton.finalStates]
+        };
+        
+        // Crear un nombre único para el estado sumidero
+        let sinkState = "sink";
+        let counter = 0;
+        while (result.states.includes(sinkState)) {
+            counter++;
+            sinkState = `sink${counter}`;
+        }
+        
+        // Añadir el estado sumidero
+        result.states.push(sinkState);
+        
+        // Encontrar las transiciones faltantes
+        const missingTransitions = findMissingTransitions(automaton);
+        
+        // Añadir transiciones faltantes al estado sumidero
+        for (const { state, symbol } of missingTransitions) {
+            result.transitions.push({
+                from: state,
+                symbol: symbol,
+                to: sinkState
+            });
         }
         
         // Añadir transiciones del estado sumidero a sí mismo para todos los símbolos

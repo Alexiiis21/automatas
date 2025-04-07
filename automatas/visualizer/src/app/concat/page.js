@@ -60,9 +60,9 @@ export default function ConcatPage() {
             alert('Debes cargar dos autómatas para realizar la concatenación');
             return;
         }
-
+    
         setIsProcessing(true);
-
+    
         try {
             // Crear prefijos para evitar colisiones de nombres de estados
             const prefixA1 = "A1_";
@@ -103,33 +103,46 @@ export default function ConcatPage() {
                 });
             });
             
+            // Caso especial: si el estado inicial del primer autómata es también final,
+            // y el estado inicial del segundo autómata es final, entonces el estado inicial
+            // del resultado debe ser también final
+            let resultFinalStates = [...finalStatesA2];
+            if (automata1.finalStates.includes(automata1.initialState) && 
+                automata2.finalStates.includes(automata2.initialState)) {
+                resultFinalStates = [initialA1, ...resultFinalStates];
+            }
+            
             // Unimos todos los componentes para formar el nuevo autómata
             const result = {
                 states: [...statesA1, ...statesA2],
                 alphabet: [...new Set([...automata1.alphabet, ...automata2.alphabet, 'ε'])],
                 initialState: initialA1,
-                finalStates: finalStatesA2, // Solo los estados finales del segundo autómata son finales
+                finalStates: resultFinalStates, // Solo los estados finales del segundo autómata son finales por defecto
                 transitions: [...transitionsA1, ...transitionsA2, ...epsilonTransitions]
             };
             
             // Optimización: eliminar estados inalcanzables
             const optimizedResult = removeUnreachableStates(result);
             
+            // Documentar que el resultado es un AFND con épsilon-transiciones
+            optimizedResult.type = "AFND-ε";
+            
             setConcatResult(optimizedResult);
         } catch (error) {
             console.error('Error al realizar la concatenación:', error);
-            alert('Error al realizar la concatenación de autómatas');
+            alert('Error al realizar la concatenación de autómatas: ' + error.message);
         } finally {
             setIsProcessing(false);
         }
     };
-
+    
     // Función para eliminar estados inalcanzables desde el estado inicial
     const removeUnreachableStates = (automata) => {
         const reachable = new Set([automata.initialState]);
         let oldSize = 0;
         
         // Encontrar todos los estados alcanzables en un bucle de punto fijo
+        // considerando también las transiciones epsilon
         while (reachable.size !== oldSize) {
             oldSize = reachable.size;
             
@@ -146,10 +159,10 @@ export default function ConcatPage() {
             alphabet: automata.alphabet,
             initialState: automata.initialState,
             finalStates: automata.finalStates.filter(s => reachable.has(s)),
-            transitions: automata.transitions.filter(t => reachable.has(t.from) && reachable.has(t.to))
+            transitions: automata.transitions.filter(t => reachable.has(t.from) && reachable.has(t.to)),
+            type: automata.type // Mantener la propiedad type si existe
         };
     };
-
     return (
         <main className="container mx-auto px-4 py-8">
             <div className="max-w-7xl mx-auto">
