@@ -16,7 +16,6 @@ export default function Home() {
     };
 
     const validateAutomata = (data) => {
-        // Check if data has all required fields
         if (!data.states || !Array.isArray(data.states) || 
             !data.alphabet || !Array.isArray(data.alphabet) ||
             !data.transitions || !Array.isArray(data.transitions) ||
@@ -25,15 +24,12 @@ export default function Home() {
             return false;
         }
 
-        // Check if initial state is in states array
         if (!data.states.includes(data.initialState)) return false;
 
-        // Check if all final states are in states array
         for (const finalState of data.finalStates) {
             if (!data.states.includes(finalState)) return false;
         }
 
-        // Check if all transitions reference valid states and symbols
         for (const transition of data.transitions) {
             if (!transition.from || !transition.to || !transition.symbol) return false;
             if (!data.states.includes(transition.from)) return false;

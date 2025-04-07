@@ -103,7 +103,6 @@ export default function RestaPage() {
 
     // Función para obtener el complemento de un autómata
     const obtenerComplemento = (automata) => {
-        // El complemento cambia los estados finales por no finales y viceversa
         return {
             states: [...automata.states],
             alphabet: [...automata.alphabet],
@@ -149,7 +148,6 @@ export default function RestaPage() {
             result.finalStates.push(initialStateName);
         }
         
-        // Procesar estados usando BFS
         const queue = [initialStatePair];
         const visited = new Set([initialStatePair]);
         
@@ -218,7 +216,6 @@ export default function RestaPage() {
                 </header>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Autómata 1 */}
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold mb-4 text-blue-700 flex items-center">
                             Autómata A
@@ -243,7 +240,6 @@ export default function RestaPage() {
                         )}
                     </div>
                     
-                    {/* Autómata 2 */}
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold mb-4 text-green-700 flex items-center">
                             Autómata B
@@ -269,7 +265,6 @@ export default function RestaPage() {
                     </div>
                 </div>
                 
-                {/* Botón para realizar la resta */}
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={performResta}
@@ -280,7 +275,6 @@ export default function RestaPage() {
                     </button>
                 </div>
                 
-                {/* Resultado de la resta */}
                 {restaResult && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-purple-700 flex items-center">

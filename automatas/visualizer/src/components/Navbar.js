@@ -39,7 +39,6 @@ const Navbar = () => {
                 href={item.path} 
                 key={item.path}
                 onClick={(e) => {
-                  // Para diagnosticar si el evento click se está registrando
                   console.log("Navegando a:", item.path);
                 }}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${

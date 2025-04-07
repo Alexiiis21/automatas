@@ -44,15 +44,20 @@ export default function KleenePage() {
 
     const performKleeneStar = () => {
         if (!automata) {
-            alert('Debes cargar un autómata para calcular su estrella de Kleene');
+            alert('Debes cargar un autómata para calcular su cierre de Kleene');
             return;
         }
-
+    
         setIsProcessing(true);
-
+    
         try {
-            // Crear una copia profunda del autómata original
-            const originalAutomata = JSON.parse(JSON.stringify(automata));
+            const originalAutomata = {
+                states: [...automata.states],
+                alphabet: [...automata.alphabet],
+                transitions: [...automata.transitions.map(t => ({...t}))],
+                initialState: automata.initialState,
+                finalStates: [...automata.finalStates]
+            };
             
             // Prefijamos los estados del autómata original para evitar colisiones
             const prefix = "q_";
@@ -63,10 +68,8 @@ export default function KleenePage() {
                 stateMapping[state] = prefix + state;
             });
             
-            // Creamos los estados prefijados
             const prefixedStates = originalAutomata.states.map(state => prefix + state);
             
-            // Creamos las transiciones prefijadas
             const prefixedTransitions = originalAutomata.transitions.map(t => ({
                 from: prefix + t.from,
                 symbol: t.symbol,
@@ -77,34 +80,31 @@ export default function KleenePage() {
             const prefixedInitial = prefix + originalAutomata.initialState;
             const prefixedFinals = originalAutomata.finalStates.map(state => prefix + state);
             
-            // Crear un nuevo estado inicial que también será final
             const newInitialState = "q_start";
             
-            // Añadir una transición epsilon desde el nuevo estado inicial al estado inicial original
             const initialEpsilonTransition = {
                 from: newInitialState,
                 symbol: 'ε',
                 to: prefixedInitial
             };
             
-            // Añadir transiciones epsilon desde todos los estados finales al estado inicial original
             const loopbackTransitions = prefixedFinals.map(finalState => ({
                 from: finalState,
                 symbol: 'ε',
                 to: prefixedInitial
             }));
             
-            // Construir el nuevo autómata
             const result = {
                 states: [...prefixedStates, newInitialState],
-                alphabet: [...originalAutomata.alphabet, 'ε'], // Añadir epsilon al alfabeto
+                alphabet: [...originalAutomata.alphabet, 'ε'], 
                 initialState: newInitialState,
-                finalStates: [...prefixedFinals, newInitialState], // El nuevo estado inicial también es final
+                finalStates: [...prefixedFinals], 
                 transitions: [
                     ...prefixedTransitions, 
                     initialEpsilonTransition, 
                     ...loopbackTransitions
-                ]
+                ],
+                type: "AFND-ε" 
             };
             
             // Optimización: eliminar estados inalcanzables
@@ -112,8 +112,8 @@ export default function KleenePage() {
             
             setKleeneResult(optimizedResult);
         } catch (error) {
-            console.error('Error al calcular la estrella de Kleene:', error);
-            alert('Error al calcular la estrella de Kleene del autómata');
+            console.error('Error al calcular el cierre de Kleene:', error);
+            alert('Error al calcular el cierre de Kleene del autómata: ' + error.message);
         } finally {
             setIsProcessing(false);
         }
@@ -177,7 +177,6 @@ export default function KleenePage() {
                     )}
                 </div>
                 
-                {/* Botón para calcular la estrella de Kleene */}
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={performKleeneStar}
@@ -188,7 +187,6 @@ export default function KleenePage() {
                     </button>
                 </div>
                 
-                {/* Resultado de la estrella de Kleene */}
                 {kleeneResult && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-purple-700 flex items-center">

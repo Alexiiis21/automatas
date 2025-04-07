@@ -166,7 +166,6 @@ export default function IntersectionPage() {
         }
     };
     
-    // Función auxiliar para comprobar si un autómata es AFD
     const isAFD = (automaton) => {
         // Para cada estado y cada símbolo del alfabeto, debe haber exactamente una transición
         for (const state of automaton.states) {
@@ -278,7 +277,6 @@ export default function IntersectionPage() {
                     </div>
                 </div>
                 
-                {/* Botón para realizar la intersección */}
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={performIntersection}
@@ -289,7 +287,6 @@ export default function IntersectionPage() {
                     </button>
                 </div>
                 
-                {/* Resultado de la intersección */}
                 {intersectionResult && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-purple-700 flex items-center">

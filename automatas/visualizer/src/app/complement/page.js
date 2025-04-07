@@ -18,7 +18,6 @@ export default function ComplementPage() {
     };
 
     const validateAutomata = (data) => {
-        // Check if data has all required fields
         if (!data.states || !Array.isArray(data.states) || 
             !data.alphabet || !Array.isArray(data.alphabet) ||
             !data.transitions || !Array.isArray(data.transitions) ||
@@ -27,15 +26,12 @@ export default function ComplementPage() {
             return false;
         }
 
-        // Check if initial state is in states array
         if (!data.states.includes(data.initialState)) return false;
 
-        // Check if all final states are in states array
         for (const finalState of data.finalStates) {
             if (!data.states.includes(finalState)) return false;
         }
 
-        // Check if all transitions reference valid states and symbols
         for (const transition of data.transitions) {
             if (!transition.from || !transition.to || !transition.symbol) return false;
             if (!data.states.includes(transition.from)) return false;
@@ -65,7 +61,6 @@ export default function ComplementPage() {
             // Crear una copia del autómata para trabajar
             let workingAutomata = JSON.parse(JSON.stringify(automata));
             
-            // Verificar si el autómata es completo
             const missingTransitions = findMissingTransitions(workingAutomata);
             
             // Si hay transiciones faltantes, completamos el autómata
@@ -78,8 +73,6 @@ export default function ComplementPage() {
                 state => !workingAutomata.finalStates.includes(state)
             );
             
-            // El complemento tiene los mismos estados, alfabeto, estado inicial y transiciones
-            // Sólo cambian los estados finales
             const result = {
                 states: [...workingAutomata.states],
                 alphabet: [...workingAutomata.alphabet],
@@ -99,7 +92,6 @@ export default function ComplementPage() {
     
     // Función para verificar si un autómata es un AFD
     const isAFD = (automaton) => {
-        // Para cada estado y cada símbolo del alfabeto, debe haber exactamente una transición
         for (const state of automaton.states) {
             for (const symbol of automaton.alphabet) {
                 const transitions = automaton.transitions.filter(
@@ -108,11 +100,11 @@ export default function ComplementPage() {
                 
                 // En un AFD, debe haber exactamente una transición para cada par (estado, símbolo)
                 if (transitions.length > 1) {
-                    return false; // Más de una transición - no es determinista
+                    return false; 
                 }
             }
         }
-        return true; // Todas las verificaciones pasaron
+        return true; 
     };
     
     // Función más eficiente para encontrar transiciones faltantes
@@ -136,7 +128,6 @@ export default function ComplementPage() {
     
     // Función mejorada para completar un autómata
     const makeAutomataComplete = (automaton) => {
-        // Crear una copia profunda del autómata
         const result = {
             states: [...automaton.states],
             alphabet: [...automaton.alphabet],
@@ -145,7 +136,6 @@ export default function ComplementPage() {
             finalStates: [...automaton.finalStates]
         };
         
-        // Crear un nombre único para el estado sumidero
         let sinkState = "sink";
         let counter = 0;
         while (result.states.includes(sinkState)) {
@@ -153,13 +143,10 @@ export default function ComplementPage() {
             sinkState = `sink${counter}`;
         }
         
-        // Añadir el estado sumidero
         result.states.push(sinkState);
         
-        // Encontrar las transiciones faltantes
         const missingTransitions = findMissingTransitions(automaton);
         
-        // Añadir transiciones faltantes al estado sumidero
         for (const { state, symbol } of missingTransitions) {
             result.transitions.push({
                 from: state,
@@ -168,7 +155,6 @@ export default function ComplementPage() {
             });
         }
         
-        // Añadir transiciones del estado sumidero a sí mismo para todos los símbolos
         for (const symbol of result.alphabet) {
             result.transitions.push({
                 from: sinkState,
@@ -212,7 +198,6 @@ export default function ComplementPage() {
                     )}
                 </div>
                 
-                {/* Botón para calcular el complemento */}
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={performComplement}
@@ -223,7 +208,6 @@ export default function ComplementPage() {
                     </button>
                 </div>
                 
-                {/* Resultado del complemento */}
                 {complementResult && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-purple-700 flex items-center">

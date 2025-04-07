@@ -45,7 +45,6 @@ const AutomataVisualizer = ({ automata }) => {
   useEffect(() => {
     if (!automata || !svgRef.current) return;
 
-    // Clear previous visualization
     d3.select(svgRef.current).selectAll("*").remove();
 
     const svg = d3.select(svgRef.current);
@@ -53,7 +52,6 @@ const AutomataVisualizer = ({ automata }) => {
     const height = 500;
     const nodeRadius = 30;
 
-    // Add zoom functionality
     const zoom = d3
       .zoom()
       .scaleExtent([0.5, 3])
@@ -63,10 +61,8 @@ const AutomataVisualizer = ({ automata }) => {
 
     svg.call(zoom);
 
-    // Create a container for all elements
     const g = svg.append("g");
 
-    // Create simulation with improved forces
     const simulation = d3
       .forceSimulation()
       .force(
@@ -80,7 +76,6 @@ const AutomataVisualizer = ({ automata }) => {
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide().radius(nodeRadius * 2));
 
-    // Prepare data
     const nodes = automata.states.map((state) => ({
       id: state,
       isInitial: state === automata.initialState,
@@ -106,10 +101,8 @@ automata.transitions.forEach((t) => {
     });
   }
 });
-    // Create beautiful gradient for the background
     const defs = g.append("defs");
 
-    // Create gradient for nodes
     const nodeGradient = defs
       .append("linearGradient")
       .attr("id", "nodeGradient")
@@ -128,7 +121,6 @@ automata.transitions.forEach((t) => {
       .attr("offset", "100%")
       .attr("stop-color", "#4891D9");
 
-    // Create gradient for final states
     const finalStateGradient = defs
       .append("linearGradient")
       .attr("id", "finalStateGradient")
@@ -147,12 +139,11 @@ automata.transitions.forEach((t) => {
       .attr("offset", "100%")
       .attr("stop-color", "#F9A826");
 
-    // Create arrow marker with better styling
     defs
     .append("marker")
     .attr("id", "arrowhead")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 0)  // Cambiado para que la punta de la flecha termine exactamente en el borde
+    .attr("refX", 0)  
     .attr("refY", 0)
     .attr("markerWidth", 6)
     .attr("markerHeight", 6)
@@ -161,12 +152,11 @@ automata.transitions.forEach((t) => {
     .attr("d", "M0,-5L10,0L0,5")
     .attr("fill", "#555");
 
-    // Special arrow for initial state
     defs
 .append("marker")
 .attr("id", "arrowhead")
 .attr("viewBox", "0 -5 10 10")
-.attr("refX", 10)  // Aumentado para alejar la flecha del final del path
+.attr("refX", 10) 
 .attr("refY", 0)
 .attr("markerWidth", 6)
 .attr("markerHeight", 6)
@@ -175,7 +165,6 @@ automata.transitions.forEach((t) => {
 .attr("d", "M0,-5L10,0L0,5")
 .attr("fill", "#555");
 
-    // Create links
     const linkGroup = g.append("g").attr("class", "links");
 
     const link = linkGroup
@@ -185,7 +174,6 @@ automata.transitions.forEach((t) => {
       .append("g")
       .attr("class", "link");
 
-    // Create paths with different curvature for multiple transitions between same nodes
     const path = link
       .append("path")
       .attr("stroke", "#555")
@@ -195,10 +183,8 @@ automata.transitions.forEach((t) => {
       .attr("marker-end", "url(#arrowhead)")
       .attr("class", "transition-path");
 
-    // Link text for transition symbols
     const labelGroup = g.append("g").attr("class", "transition-labels");
 
-    // Link text for transition symbols
     const linkLabels = labelGroup
       .selectAll("text")
       .data(links)
@@ -212,7 +198,7 @@ automata.transitions.forEach((t) => {
       .attr("fill", "#333")
       .text(d => transitionLabels[d.id]);
     
-    // Añadir fondo a las etiquetas para mejor legibilidad (opcional)
+    // Añadir fondo a las etiquetas para mejor legibilidad 
     linkLabels.each(function() {
       try {
         const bbox = this.getBBox();
@@ -228,7 +214,6 @@ automata.transitions.forEach((t) => {
         console.log("Error getting bounding box:", e);
       }
     });
-    // Create nodes
     const nodeGroup = g.append("g").attr("class", "nodes");
 
     const node = nodeGroup
@@ -245,7 +230,6 @@ automata.transitions.forEach((t) => {
           .on("end", dragended)
       );
 
-    // Add shadows to nodes for 3D effect
     node
       .append("circle")
       .attr("r", nodeRadius + 2)
@@ -253,7 +237,6 @@ automata.transitions.forEach((t) => {
       .attr("opacity", 0.3)
       .attr("transform", "translate(3, 3)");
 
-    // Create circles for states with gradient fill
     node
       .append("circle")
       .attr("r", nodeRadius)
@@ -263,7 +246,6 @@ automata.transitions.forEach((t) => {
       .attr("stroke", "#2D3748")
       .attr("stroke-width", 2);
 
-    // Create inner circle for final states
     node
       .filter((d) => d.isFinal)
       .append("circle")
@@ -272,7 +254,6 @@ automata.transitions.forEach((t) => {
       .attr("stroke-width", 2)
       .attr("fill", "none");
 
-    // Arrow for initial state
     node
       .filter((d) => d.isInitial)
       .each(function (d) {
@@ -285,7 +266,6 @@ automata.transitions.forEach((t) => {
           .datum(d);
       });
 
-    // Add state labels with better contrast
     node
       .append("text")
       .text((d) => d.id)
@@ -297,42 +277,32 @@ automata.transitions.forEach((t) => {
       .attr("fill", "#fff")
       .attr("pointer-events", "none");
 
-    // Update positions on tick
     simulation.nodes(nodes).on("tick", () => {
-      // Update link paths with better curves
       path.attr("d", (d) => {
         const dx = d.target.x - d.source.x;
         const dy = d.target.y - d.source.y;
         const dr = Math.sqrt(dx * dx + dy * dy);
       
-        // Handle self-loops with better appearance
         if (d.isSelfLoop) {
-            // Hacer un loop más grande y ajustado al nodo
-            const rx = nodeRadius * 1.8,  // Aumentado para hacer el loop más grande
+            const rx = nodeRadius * 1.8,  
                   ry = nodeRadius * 1.8;
             
-            // Calcular puntos de inicio y fin para que el loop se vea bien y la flecha no se encime
             return `M${d.source.x},${d.source.y - nodeRadius} 
                     A${rx},${ry} 0 1,1 ${d.source.x + nodeRadius * 0.7},${d.source.y - nodeRadius * 0.7}`;
           }
       
-        // Calculate where the path should end - exactly at the edge of the target node
         const length = Math.sqrt(dx * dx + dy * dy);
 if (length === 0) return "M0,0 L0,0";
 
-// Calculate unit vector and end point slightly before node edge
 const unitX = dx / length;
 const unitY = dy / length;
-// Añadir un margen de 5px antes del borde del nodo
 const margin = 5;
 const targetX = d.target.x - unitX * (nodeRadius + margin);
 const targetY = d.target.y - unitY * (nodeRadius + margin);
 
-// Create curved path ending before node's edge
 return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},${targetY}`;
       });
 
-      // Update label positions
       linkLabels
       .attr("x", d => {
         if (d.isSelfLoop) {
@@ -353,7 +323,6 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
         }
       });
     
-    // Update label background positions (si decidiste incluir los fondos)
     labelGroup.selectAll("rect").each(function(_, i) {
       const text = labelGroup.selectAll("text").nodes()[i];
       try {
@@ -366,12 +335,10 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
       } catch(e) {}
     });
 
-      // Update node positions
       node.attr("transform", (d) => `translate(${d.x}, ${d.y})`);
 
-      // Update initial state arrow
       g.selectAll(".initial-arrow").attr("d", (d) => {
-        const angle = Math.PI; // Point from left side
+        const angle = Math.PI;
         const startX = d.x - nodeRadius - 40;
         const startY = d.y;
         const endX = d.x - nodeRadius - 10;
@@ -382,7 +349,6 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
 
     simulation.force("link").links(links);
 
-    // Drag functions
     function dragstarted(event, d) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;
@@ -396,12 +362,8 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
 
     function dragended(event, d) {
       if (!event.active) simulation.alphaTarget(0);
-      // Keep nodes fixed where user dragged them
-      // d.fx = null;
-      // d.fy = null;
     }
 
-    // Add controls
     const controls = svg
       .append("g")
       .attr("transform", "translate(20, 20)")
@@ -424,7 +386,6 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
       .attr("font-size", 12)
       .text("Zoom Controls");
 
-    // Zoom in button
     const zoomIn = controls.append("g").attr("transform", "translate(25, 40)");
     zoomIn
       .append("circle")
@@ -437,7 +398,6 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
       svg.transition().duration(300).call(zoom.scaleBy, 1.3);
     });
 
-    // Zoom out button
     const zoomOut = controls.append("g").attr("transform", "translate(75, 40)");
     zoomOut
       .append("circle")
@@ -454,7 +414,6 @@ return `M${d.source.x},${d.source.y} A${dr * 1.2},${dr * 1.2} 0 0,1 ${targetX},$
       svg.transition().duration(300).call(zoom.scaleBy, 0.7);
     });
 
-    // Center the graph initially with a small animation
     setTimeout(() => {
       svg
         .transition()

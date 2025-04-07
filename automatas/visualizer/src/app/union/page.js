@@ -80,17 +80,14 @@ export default function UnionPage() {
             };
     
             // Crear el producto cartesiano de estados
-            const stateMap = new Map(); // Para mapear pares de estados a IDs legibles
+            const stateMap = new Map(); 
     
-            // Crear el estado inicial - MANTENER LA COMBINACIÓN ORIGINAL
             const initialStatePair = `${automata1.initialState},${automata2.initialState}`;
-            // Usar directamente el par de estados como nombre del nuevo estado
             const initialStateName = `(${automata1.initialState},${automata2.initialState})`;
             result.initialState = initialStateName;
             stateMap.set(initialStatePair, initialStateName);
             result.states.push(initialStateName);
             
-            // Si cualquiera de los estados iniciales es de aceptación, el estado combinado es de aceptación
             if (automata1.finalStates.includes(automata1.initialState) || 
                 automata2.finalStates.includes(automata2.initialState)) {
                 result.finalStates.push(initialStateName);
@@ -107,7 +104,6 @@ export default function UnionPage() {
                 
                 // Por cada símbolo en el alfabeto
                 for (const symbol of alphabet) {
-                    // Encontrar los siguientes estados en ambos autómatas
                     const nextState1 = getTransitionTarget(automata1, state1, symbol) || 'dead';
                     const nextState2 = getTransitionTarget(automata2, state2, symbol) || 'dead';
                     
@@ -116,7 +112,6 @@ export default function UnionPage() {
                     
                     // Verificar si este par ya ha sido procesado
                     if (!stateMap.has(nextPair)) {
-                        // Usar directamente el par de estados como nombre del nuevo estado
                         const newStateName = `(${nextState1},${nextState2})`;
                         stateMap.set(nextPair, newStateName);
                         result.states.push(newStateName);
@@ -150,7 +145,6 @@ export default function UnionPage() {
             const reachableStates = new Set();
             const transitionsToKeep = [];
             
-            // BFS para encontrar estados alcanzables
             const reachableQueue = [result.initialState];
             reachableStates.add(result.initialState);
             
@@ -206,7 +200,6 @@ export default function UnionPage() {
             }
         }
         
-        // Verificar que existe exactamente una transición para cada par estado-símbolo
         for (const [key, count] of transitionMap.entries()) {
             if (count !== 1) {
                 return false;
@@ -236,7 +229,6 @@ export default function UnionPage() {
                 </header>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Autómata 1 */}
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold mb-4 text-blue-700 flex items-center">
                             Autómata 1
@@ -261,7 +253,6 @@ export default function UnionPage() {
                         )}
                     </div>
                     
-                    {/* Autómata 2 */}
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold mb-4 text-green-700 flex items-center">
                             Autómata 2
@@ -287,7 +278,6 @@ export default function UnionPage() {
                     </div>
                 </div>
                 
-                {/* Botón para realizar la unión */}
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={performUnion}
@@ -298,7 +288,6 @@ export default function UnionPage() {
                     </button>
                 </div>
                 
-                {/* Resultado de la unión */}
                 {unionResult && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-purple-700 flex items-center">
