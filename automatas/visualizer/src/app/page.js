@@ -3,15 +3,39 @@ import { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import AutomataVisualizer from '@/components/AutomataVisualizer';
 import QuintupleDisplay from '@/components/QuintupleDisplay';
+import { convertToRegex, simplifyRegex } from '@/lib/utils';
 
 export default function Home() {
     const [automata, setAutomata] = useState(null);
+    const [regex, setRegex] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const calculateRegex = () => {
+        if (!automata) {
+            alert('Debes cargar un autómata para obtener su expresión regular');
+            return;
+        }
+        
+        setIsProcessing(true);
+        try {
+            const result = convertToRegex(automata);
+            const simplified = simplifyRegex(result);
+            setRegex(simplified);
+        } catch (error) {
+            console.error('Error al calcular la expresión regular:', error);
+            alert('Error al calcular la expresión regular del autómata: ' + error.message);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const handleFileUpload = (data) => {
         if (validateAutomata(data)) {
             setAutomata(data);
+            // Limpiar cualquier expresión regular previa
+            setRegex(null);
         } else {
-            alert('Invalid automata format. Please check your JSON file structure.');
+            alert('Formato de autómata inválido. Por favor verifica la estructura del archivo JSON.');
         }
     };
 
@@ -59,21 +83,49 @@ export default function Home() {
                 </div>
 
                 {automata && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-semibold mb-4 text-blue-700">
-                                Quíntupla
-                            </h2>
-                            <QuintupleDisplay automata={automata} />
-                        </div>
-                        
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-semibold mb-4 text-blue-700">
-                                Representación Visual
-                            </h2>
-                            <div className="border border-gray-200 rounded-md overflow-hidden">
-                                <AutomataVisualizer automata={automata} />
+                    <>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="text-xl font-semibold mb-4 text-blue-700">
+                                    Quíntupla
+                                </h2>
+                                <QuintupleDisplay automata={automata} />
                             </div>
+                            
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="text-xl font-semibold mb-4 text-blue-700">
+                                    Representación Visual
+                                </h2>
+                                <div className="border border-gray-200 rounded-md overflow-hidden">
+                                    <AutomataVisualizer automata={automata} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botón para calcular la expresión regular */}
+                        <div className="flex justify-center mb-8">
+                            <button
+                                onClick={calculateRegex}
+                                disabled={isProcessing}
+                                className="px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? 'Procesando...' : 'Obtener Expresión Regular'}
+                            </button>
+                        </div>
+                    </>
+                )}
+                
+                {regex && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+                        <h2 className="text-2xl font-semibold mb-4 text-green-700 flex items-center">
+                            Expresión Regular Equivalente
+                        </h2>
+                        <div className="bg-gray-50 p-4 rounded-md mb-4">
+                            <p className="text-lg font-medium text-gray-800 break-words">{regex}</p>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                            <p>Derivada utilizando el Lema de Arden</p>
+                            <p className="mt-1">Esta expresión regular describe exactamente el mismo lenguaje que el autómata.</p>
                         </div>
                     </div>
                 )}
